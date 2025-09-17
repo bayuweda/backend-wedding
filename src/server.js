@@ -25,19 +25,18 @@ const pool = mysql.createPool({
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
+  port: parseInt(process.env.DB_PORT, 10),
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
-// helper untuk query (promise)
-const query = (sql, params) =>
-  new Promise((resolve, reject) => {
-    pool.query(sql, params, (err, results) => {
-      if (err) return reject(err);
-      resolve(results);
-    });
-  });
+const query = async (sql, params) => {
+  const [rows] = await pool.promise().query(sql, params);
+  return rows;
+};
 
 // ROUTES
 app.get("/", (req, res) => res.json({ ok: true }));
@@ -135,7 +134,8 @@ app.get("/comments", async (req, res) => {
     const rows = await query("SELECT * FROM comments ORDER BY created_at DESC");
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("❌ Error fetching comments:", err); // <-- log lengkap
+    res.status(500).json({ error: err.message || "Unknown error" });
   }
 });
 
@@ -157,7 +157,10 @@ app.post("/comments", async (req, res) => {
       is_present: !!isPresent,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("❌ Full error:", err); // log object lengkap
+    res
+      .status(500)
+      .json({ error: err.message || err.toString() || "Unknown error" });
   }
 });
 
@@ -175,3 +178,6 @@ app.delete("/comments/:id", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
+
+console.log("DB Host:", process.env.DB_HOST);
+console.log("DB Name:", process.env.DB_NAME);
