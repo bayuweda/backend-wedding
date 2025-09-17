@@ -10,18 +10,18 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Pool koneksi MySQL (lebih aman untuk production)
+// Pool koneksi MySQL
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASS || "",
-  database: process.env.DB_NAME || "wedding_invitation",
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
 });
 
-// helper untuk query -> mengubah callback ke promise
+// helper untuk query (promise)
 const query = (sql, params) =>
   new Promise((resolve, reject) => {
     pool.query(sql, params, (err, results) => {
@@ -30,40 +30,19 @@ const query = (sql, params) =>
     });
   });
 
-// buat tabel jika belum ada (opsional)
-(async () => {
-  try {
-    await query(`
-      CREATE TABLE IF NOT EXISTS guests (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255),
-        phone VARCHAR(50),
-        status ENUM('pending','confirmed','declined') DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    console.log("✅ ensured guests table exists");
-  } catch (err) {
-    console.error("Table creation error:", err);
-  }
-})();
-
 // ROUTES
 app.get("/", (req, res) => res.json({ ok: true }));
 
-// GET all guests
+// ===== GUESTS =====
 app.get("/guests", async (req, res) => {
   try {
     const rows = await query("SELECT * FROM guests ORDER BY created_at DESC");
     res.json(rows);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET single guest by id
 app.get("/guests/:id", async (req, res) => {
   const { id } = req.params;
   try {
@@ -75,7 +54,6 @@ app.get("/guests/:id", async (req, res) => {
   }
 });
 
-// POST add guest
 app.post("/guests", async (req, res) => {
   const { name, email = null, phone = null } = req.body;
   if (!name || !name.trim())
@@ -98,7 +76,6 @@ app.post("/guests", async (req, res) => {
   }
 });
 
-// PATCH update guest (e.g. status or name)
 app.patch("/guests/:id", async (req, res) => {
   const { id } = req.params;
   const { name, email, phone, status } = req.body;
@@ -121,7 +98,6 @@ app.patch("/guests/:id", async (req, res) => {
       fields.push("status = ?");
       params.push(status);
     }
-
     if (!fields.length)
       return res.status(400).json({ error: "No fields to update" });
 
@@ -134,7 +110,6 @@ app.patch("/guests/:id", async (req, res) => {
   }
 });
 
-// DELETE guest
 app.delete("/guests/:id", async (req, res) => {
   const { id } = req.params;
   try {
@@ -145,11 +120,7 @@ app.delete("/guests/:id", async (req, res) => {
   }
 });
 
-// comment
-
-// ================== COMMENTS ================== //
-
-// GET all comments
+// ===== COMMENTS =====
 app.get("/comments", async (req, res) => {
   try {
     const rows = await query("SELECT * FROM comments ORDER BY created_at DESC");
@@ -159,7 +130,6 @@ app.get("/comments", async (req, res) => {
   }
 });
 
-// POST add comment
 app.post("/comments", async (req, res) => {
   const { name, message, isPresent } = req.body;
   if (!name || !message) {
@@ -182,7 +152,6 @@ app.post("/comments", async (req, res) => {
   }
 });
 
-// DELETE comment (opsional)
 app.delete("/comments/:id", async (req, res) => {
   const { id } = req.params;
   try {
