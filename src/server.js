@@ -11,7 +11,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173", // dev frontend
-      "https://wedding-xi-sable.vercel.app/", // deploy frontend
+      "https://wedding-xi-sable.vercel.app", // deploy frontend
     ],
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
