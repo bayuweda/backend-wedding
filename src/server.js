@@ -7,7 +7,16 @@ const mysql = require("mysql2");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173", // dev frontend
+      "https://your-frontend-vercel-domain.vercel.app", // deploy frontend
+    ],
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Pool koneksi MySQL
