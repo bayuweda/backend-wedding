@@ -7,33 +7,19 @@ const mysql = require("mysql2");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ===== CORS Setup =====
-const allowedOrigins = [
-  "http://localhost:5173", // dev frontend
-  "https://wedding-xi-sable.vercel.app", // deploy frontend, tanpa trailing slash
-];
-
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // izinkan request tanpa origin (misal Postman) atau origin yang terdaftar
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: [
+      "http://localhost:5173", // dev frontend
+      "https://wedding-xi-sable.vercel.app/", // deploy frontend
+    ],
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
   })
 );
-
-// Handle preflight requests
-app.options("*", cors());
-
 app.use(express.json());
 
-// ===== MySQL Pool =====
+// Pool koneksi MySQL
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -52,10 +38,10 @@ const query = async (sql, params) => {
   return rows;
 };
 
-// ===== ROUTES =====
+// ROUTES
 app.get("/", (req, res) => res.json({ ok: true }));
 
-// --- GUESTS ---
+// ===== GUESTS =====
 app.get("/guests", async (req, res) => {
   try {
     const rows = await query("SELECT * FROM guests ORDER BY created_at DESC");
@@ -142,21 +128,22 @@ app.delete("/guests/:id", async (req, res) => {
   }
 });
 
-// --- COMMENTS ---
+// ===== COMMENTS =====
 app.get("/comments", async (req, res) => {
   try {
     const rows = await query("SELECT * FROM comments ORDER BY created_at DESC");
     res.json(rows);
   } catch (err) {
-    console.error("❌ Error fetching comments:", err);
+    console.error("❌ Error fetching comments:", err); // <-- log lengkap
     res.status(500).json({ error: err.message || "Unknown error" });
   }
 });
 
 app.post("/comments", async (req, res) => {
   const { name, message, isPresent } = req.body;
-  if (!name || !message)
+  if (!name || !message) {
     return res.status(400).json({ error: "Nama dan pesan harus diisi" });
+  }
 
   try {
     const result = await query(
@@ -170,8 +157,10 @@ app.post("/comments", async (req, res) => {
       is_present: !!isPresent,
     });
   } catch (err) {
-    console.error("❌ Full error:", err);
-    res.status(500).json({ error: err.message || "Unknown error" });
+    console.error("❌ Full error:", err); // log object lengkap
+    res
+      .status(500)
+      .json({ error: err.message || err.toString() || "Unknown error" });
   }
 });
 
@@ -185,7 +174,7 @@ app.delete("/comments/:id", async (req, res) => {
   }
 });
 
-// ===== START SERVER =====
+// Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
