@@ -6,17 +6,28 @@ const mysql = require("mysql2");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const allowedOrigins = [
+  "http://localhost:5173", // dev frontend
+  "https://wedding-xi-sable.vercel.app", // deploy frontend, tanpa trailing slash
+];
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173", // dev frontend
-      "https://wedding-xi-sable.vercel.app/", // deploy frontend
-    ],
+    origin: function (origin, callback) {
+      // izinkan request tanpa origin (misal Postman) atau origin yang terdaftar
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
   })
 );
+
+// Handle preflight requests
+app.options("*", cors());
 app.use(express.json());
 
 // Pool koneksi MySQL
