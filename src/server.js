@@ -12,8 +12,11 @@ app.use(
     origin: [
       "http://localhost:5173",
       "http://192.168.2.122:5173", // dev frontend
-      "https://wedding-2-teal.vercel.app", // deploy frontend
+      "https://wedding-2-teal.vercel.app",
+      "https://gusadit-dayumirah.vercel.app",
+      // deploy frontend
     ],
+
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
   })
